@@ -156,12 +156,14 @@ impl From<PrometheusMetricType> for MetricType {
 
 impl quote::ToTokens for PrometheusMetricType {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.append(Ident::new("MetricType", Span::call_site()));
+        tokens.append(Punct::new(':', Spacing::Joint));
+        tokens.append(Punct::new(':', Spacing::Alone));
         let t = match self {
-            PrometheusMetricType::Counter => syn::parse_str::<Ident>("MetricType::Counter"),
-            PrometheusMetricType::Guage => syn::parse_str::<Ident>("MetricType::Gauge"),
-            PrometheusMetricType::Text => syn::parse_str::<Ident>("MetricType::Counter"),
-            _ => unimplemented!("This metric type is not yet supported."),
+            PrometheusMetricType::Counter => Ident::new("Counter", Span::call_site()),
+            PrometheusMetricType::Guage => Ident::new("Gauge", Span::call_site()),
+            PrometheusMetricType::Text => Ident::new("Counter", Span::call_site()),
         };
-        tokens.append(t.unwrap());
+        tokens.append(t);
     }
 }
