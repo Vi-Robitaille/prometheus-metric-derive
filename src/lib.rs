@@ -55,6 +55,7 @@ impl ToTokens for PromInputReciever {
                     // If we figure out how to implement ToTokens for `MetricType`
                     // let field_metric_type: MetricType = f.metric_type.unwrap().into();
 
+                    // as specified by `metric_type = "foo"`
                     let field_metric_type = f.metric_type.unwrap();
 
                     let default_help = ::std::string::String::from("Generic help msg");
@@ -65,47 +66,37 @@ impl ToTokens for PromInputReciever {
                         quote!(#i)
                     });
 
-                    // There's lots of duplicated code here, how fix?
-                    // ToTokens is not implemented for `MetricType` so...
-                    match field_metric_type {
+                    // Get teh conversion done here so we can generalize
+                    let metric_type = quote! { MetricType::from(field_metric_type) };
+
+                    let prometheus_instance = match field_metric_type {
                         PrometheusMetricType::Counter => quote! {
-                            let mut #field_ident = PrometheusMetric::build()
-                                .with_name(#field_name)
-                                .with_metric_type(MetricType::from(field_metric_type))
-                                .with_help(#field_help)
-                                .build();
-                            #field_ident.render_and_append_instance(
-                                &PrometheusInstance::new()
+                            &PrometheusInstance::new()
                                     .with_value(self.#field_ident)
-                            );
-                            result.push(#field_ident.render());
                         },
                         PrometheusMetricType::Guage => quote! {
-                            let mut #field_ident = PrometheusMetric::build()
-                                .with_name(#field_name)
-                                .with_metric_type(MetricType::from(field_metric_type))
-                                .with_help(#field_help)
-                                .build();
-                            #field_ident.render_and_append_instance(
-                                &PrometheusInstance::new()
+                            &PrometheusInstance::new()
                                     .with_value(self.#field_ident as usize)
-                            );
-                            result.push(#field_ident.render());
                         },
                         PrometheusMetricType::Text => quote! {
-                            let mut #field_ident = PrometheusMetric::build()
-                                .with_name(#field_name)
-                                .with_metric_type(MetricType::Counter)
-                                .with_help(#field_help)
-                                .build();
-                            #field_ident.render_and_append_instance(
-                                &PrometheusInstance::new()
+                            &PrometheusInstance::new()
                                     .with_value(1usize)
                                     .with_label("value", self.#field_ident.as_str())
-                            );
-                            result.push(#field_ident.render());
                         },
+                    };
+
+                    quote! {
+                        let mut #field_ident = PrometheusMetric::build()
+                            .with_name(#field_name)
+                            .with_metric_type(#metric_type)
+                            .with_help(#field_help)
+                            .build();
+                        #field_ident.render_and_append_instance(
+                            #prometheus_instance
+                        );
+                        result.push(#field_ident.render());
                     }
+                    
                 } else {
                     quote! {}
                 }
