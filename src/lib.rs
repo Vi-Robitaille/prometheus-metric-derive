@@ -1,9 +1,8 @@
 extern crate proc_macro2;
 extern crate syn;
 
-use proc_macro2::{TokenTree, Spacing, Span, Punct, TokenStream};
+use proc_macro2::{Spacing, Span, Punct, TokenStream};
 use darling::{ast, FromDeriveInput, FromField, FromMeta};
-use prometheus_exporter_base::prelude::*;
 use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{parse_macro_input, DeriveInput, Ident};
 
@@ -140,18 +139,6 @@ enum PrometheusMetricType {
     Counter,
     Guage,
     Text,
-}
-
-#[allow(unused)]
-impl From<PrometheusMetricType> for MetricType {
-    fn from(val: PrometheusMetricType) -> Self {
-        match val {
-            PrometheusMetricType::Counter => MetricType::Counter,
-            PrometheusMetricType::Guage => MetricType::Gauge,
-            PrometheusMetricType::Text => MetricType::Counter,
-            _ => unimplemented!("This metric type is not yet supported."),
-        }
-    }
 }
 
 impl quote::ToTokens for PrometheusMetricType {
