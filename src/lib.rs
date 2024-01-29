@@ -71,7 +71,7 @@ impl ToTokens for PromInputReciever {
                         PrometheusMetricType::Counter => quote! {
                             let mut #field_ident = PrometheusMetric::build()
                                 .with_name(#field_name)
-                                .with_metric_type(MetricType::Counter)
+                                .with_metric_type(MetricType::from(field_metric_type))
                                 .with_help(#field_help)
                                 .build();
                             #field_ident.render_and_append_instance(
@@ -83,7 +83,7 @@ impl ToTokens for PromInputReciever {
                         PrometheusMetricType::Guage => quote! {
                             let mut #field_ident = PrometheusMetric::build()
                                 .with_name(#field_name)
-                                .with_metric_type(MetricType::Gauge)
+                                .with_metric_type(MetricType::from(field_metric_type))
                                 .with_help(#field_help)
                                 .build();
                             #field_ident.render_and_append_instance(
@@ -101,7 +101,7 @@ impl ToTokens for PromInputReciever {
                             #field_ident.render_and_append_instance(
                                 &PrometheusInstance::new()
                                     .with_value(1usize)
-                                    .with_label("value", self.#field_ident)
+                                    .with_label("value", ::std::string::String::from(self.#field_ident))
                             );
                             result.push(#field_ident.render());
                         },
