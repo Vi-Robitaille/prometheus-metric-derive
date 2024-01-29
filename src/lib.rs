@@ -101,7 +101,7 @@ impl ToTokens for PromInputReciever {
                             #field_ident.render_and_append_instance(
                                 &PrometheusInstance::new()
                                     .with_value(1usize)
-                                    .with_label("value", ::std::string::String::from(self.#field_ident))
+                                    .with_label("value", self.#field_ident.as_str())
                             );
                             result.push(#field_ident.render());
                         },
