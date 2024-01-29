@@ -1,10 +1,11 @@
 extern crate proc_macro2;
 extern crate syn;
 
+use proc_macro2::{TokenTree, Spacing, Span, Punct, TokenStream};
 use darling::{ast, FromDeriveInput, FromField, FromMeta};
 use prometheus_exporter_base::prelude::*;
-use quote::{quote, ToTokens};
-use syn::{parse_macro_input, DeriveInput};
+use quote::{quote, ToTokens, TokenStreamExt};
+use syn::{parse_macro_input, DeriveInput, Ident};
 
 // https://github.com/TedDriggs/darling/blob/master/examples/consume_fields.rs
 
@@ -64,8 +65,9 @@ impl ToTokens for PromInputReciever {
                         quote!(#i)
                     });
 
-                    // Get teh conversion done here so we can generalize
-                    let metric_type = quote! { MetricType::from(field_metric_type) };
+                    // Get the conversion done here so we can generalize
+
+                    let metric_type = quote!{ #field_metric_type };
 
                     let prometheus_instance = match field_metric_type {
                         PrometheusMetricType::Counter => quote! {
@@ -149,5 +151,17 @@ impl From<PrometheusMetricType> for MetricType {
             PrometheusMetricType::Text => MetricType::Counter,
             _ => unimplemented!("This metric type is not yet supported."),
         }
+    }
+}
+
+impl quote::ToTokens for PrometheusMetricType {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let t = match self {
+            PrometheusMetricType::Counter => syn::parse_str::<Ident>("MetricType::Counter"),
+            PrometheusMetricType::Guage => syn::parse_str::<Ident>("MetricType::Gauge"),
+            PrometheusMetricType::Text => syn::parse_str::<Ident>("MetricType::Counter"),
+            _ => unimplemented!("This metric type is not yet supported."),
+        };
+        tokens.append(t.unwrap());
     }
 }
