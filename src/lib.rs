@@ -88,6 +88,19 @@ impl ToTokens for PromInputReciever {
                             );
                             result.push(#field_ident.render());
                         },
+                        PrometheusMetricType::StringHack => quote! {
+                            let mut #field_ident = PrometheusMetric::build()
+                                .with_name(#field_name)
+                                .with_metric_type(MetricType::Counter)
+                                .with_help(#field_help)
+                                .build();
+                            #field_ident.render_and_append_instance(
+                                &PrometheusInstance::new()
+                                    .with_value(1usize)
+                                    .with_label("value", self.#field_ident)
+                            );
+                            result.push(#field_ident.render());
+                        },
                     }
                 } else {
                     quote! {}
@@ -132,6 +145,7 @@ struct PromFieldReciever {
 enum PrometheusMetricType {
     Counter,
     Guage,
+    StringHack,
 }
 
 #[allow(unused)]
@@ -140,6 +154,7 @@ impl From<PrometheusMetricType> for MetricType {
         match val {
             PrometheusMetricType::Counter => MetricType::Counter,
             PrometheusMetricType::Guage => MetricType::Gauge,
+            PrometheusMetricType::StringHack => MetricType::Counter,
             _ => unimplemented!("This metric type is not yet supported.")
         }
     }
