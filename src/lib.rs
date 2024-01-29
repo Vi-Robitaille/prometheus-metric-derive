@@ -2,12 +2,11 @@ extern crate proc_macro2;
 extern crate syn;
 
 use darling::{ast, FromDeriveInput, FromField, FromMeta};
+use prometheus_exporter_base::prelude::*;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput};
-use prometheus_exporter_base::prelude::*;
 
 // https://github.com/TedDriggs/darling/blob/master/examples/consume_fields.rs
-
 
 #[proc_macro_derive(Metric, attributes(prometheus))]
 pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -35,15 +34,14 @@ impl ToTokens for PromInputReciever {
 
         let (imp, ty, wher) = generics.split_for_impl();
 
-        // 
+        //
         let fields = data
             .as_ref()
             .take_struct()
             .expect("Shouldnt be an enum")
             .fields;
 
-
-        // 
+        //
         let field_list = fields
             .into_iter()
             .enumerate()
@@ -96,7 +94,6 @@ impl ToTokens for PromInputReciever {
                         );
                         result.push(#field_ident.render());
                     }
-                    
                 } else {
                     quote! {}
                 }
@@ -150,7 +147,7 @@ impl From<PrometheusMetricType> for MetricType {
             PrometheusMetricType::Counter => MetricType::Counter,
             PrometheusMetricType::Guage => MetricType::Gauge,
             PrometheusMetricType::Text => MetricType::Counter,
-            _ => unimplemented!("This metric type is not yet supported.")
+            _ => unimplemented!("This metric type is not yet supported."),
         }
     }
 }
