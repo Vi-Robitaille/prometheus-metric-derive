@@ -34,12 +34,16 @@ impl ToTokens for PromInputReciever {
         } = *self;
 
         let (imp, ty, wher) = generics.split_for_impl();
+
+        // 
         let fields = data
             .as_ref()
             .take_struct()
             .expect("Shouldnt be an enum")
             .fields;
 
+
+        // 
         let field_list = fields
             .into_iter()
             .enumerate()
@@ -88,7 +92,7 @@ impl ToTokens for PromInputReciever {
                             );
                             result.push(#field_ident.render());
                         },
-                        PrometheusMetricType::StringHack => quote! {
+                        PrometheusMetricType::Text => quote! {
                             let mut #field_ident = PrometheusMetric::build()
                                 .with_name(#field_name)
                                 .with_metric_type(MetricType::Counter)
@@ -145,7 +149,7 @@ struct PromFieldReciever {
 enum PrometheusMetricType {
     Counter,
     Guage,
-    StringHack,
+    Text,
 }
 
 #[allow(unused)]
@@ -154,7 +158,7 @@ impl From<PrometheusMetricType> for MetricType {
         match val {
             PrometheusMetricType::Counter => MetricType::Counter,
             PrometheusMetricType::Guage => MetricType::Gauge,
-            PrometheusMetricType::StringHack => MetricType::Counter,
+            PrometheusMetricType::Text => MetricType::Counter,
             _ => unimplemented!("This metric type is not yet supported.")
         }
     }
