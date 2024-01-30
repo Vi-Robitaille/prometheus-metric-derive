@@ -184,7 +184,7 @@ impl ToTokens for PromInputReciever {
                     result.concat()
                 }
 
-                fn get_metrics_with_prefix(&self, prefix: &str) -> ::std::string::String {
+                fn get_metrics_with_prefix(&self, prefix: String) -> ::std::string::String {
                     let mut result: ::std::vec::Vec<::std::string::String> = Vec::new();
 
                     #field_list_get_metrics_with_prefix
