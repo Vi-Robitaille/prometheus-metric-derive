@@ -153,8 +153,9 @@ impl ToTokens for PromInputReciever {
                     };
     
                     quote! {
+                        let name = format!("{}_{}", prefix, #field_name);
                         let mut #field_ident = PrometheusMetric::build()
-                            .with_name(format!("{}_{}", prefix, #field_name))
+                            .with_name(&name)
                             .with_metric_type(#metric_type)
                             .with_help(#field_help)
                             .build();
@@ -176,6 +177,25 @@ impl ToTokens for PromInputReciever {
 
         tokens.extend(quote! {
             impl #imp Metric for #ident #ty #wher {
+                fn get_metrics(&self) -> ::std::string::String {
+                    let mut result: ::std::vec::Vec<::std::string::String> = Vec::new();
+
+                    #field_list_get_metrics
+
+                    result.concat()
+                }
+
+                fn get_metrics_with_prefix(&self, prefix: String) -> ::std::string::String {
+                    let mut result: ::std::vec::Vec<::std::string::String> = Vec::new();
+
+                    #field_list_get_metrics_with_prefix
+
+                    result.concat()
+                }
+            }
+        });
+        tokens.extend(quote! {
+            impl #imp Metric for &#ident #ty #wher {
                 fn get_metrics(&self) -> ::std::string::String {
                     let mut result: ::std::vec::Vec<::std::string::String> = Vec::new();
 
