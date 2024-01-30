@@ -32,7 +32,11 @@ impl ToTokens for PromInputReciever {
             ref data,
         } = *self;
 
-        let (imp, ty, wher) = generics.split_for_impl();
+        let (
+            imp, 
+            ty, 
+            wher
+        ) = generics.split_for_impl();
 
         //
         let fields = data
@@ -43,7 +47,7 @@ impl ToTokens for PromInputReciever {
 
         //
         let field_list = fields
-            .into_iter()
+            .iter()
             .enumerate()
             .map(|(i, f)| {
                 if f.name.is_some() && f.metric_type.is_some() {
@@ -117,6 +121,86 @@ impl ToTokens for PromInputReciever {
                 }
             }
         });
+
+
+        // BIG JANK QUICK ADD
+
+        //
+        let field_list = fields
+        .iter()
+        .enumerate()
+        .map(|(i, f)| {
+            if f.name.is_some() && f.metric_type.is_some() {
+                let field_name = f.name.as_ref().unwrap();
+
+                // Use an easy conversion from the `FromMeta` to a useable type
+                // If we figure out how to implement ToTokens for `MetricType`
+                // let field_metric_type: MetricType = f.metric_type.unwrap().into();
+
+                // as specified by `metric_type = "foo"`
+                let field_metric_type = f.metric_type.unwrap();
+
+                let default_help = ::std::string::String::from("Generic help msg");
+                let field_help = f.help.as_ref().unwrap_or(&default_help);
+
+                let field_ident = f.ident.as_ref().map(|v| quote!(#v)).unwrap_or_else(|| {
+                    let i = syn::Index::from(i);
+                    quote!(#i)
+                });
+
+                // Get the conversion done here so we can generalize
+
+                let metric_type = quote!{ #field_metric_type };
+
+                let prometheus_instance = match field_metric_type {
+                    PrometheusMetricType::Counter => quote! {
+                        &PrometheusInstance::new()
+                                .with_value(self.#field_ident)
+                    },
+                    PrometheusMetricType::Guage => quote! {
+                        &PrometheusInstance::new()
+                                .with_value(self.#field_ident as usize)
+                    },
+                    PrometheusMetricType::Text => quote! {
+                        &PrometheusInstance::new()
+                                .with_value(1usize)
+                                .with_label("value", self.#field_ident.as_str())
+                    },
+                };
+
+                quote! {
+                    let mut #field_ident = PrometheusMetric::build()
+                        .with_name(format!("{}_{}", prefix, #field_name))
+                        .with_metric_type(#metric_type)
+                        .with_help(#field_help)
+                        .build();
+                    #field_ident.render_and_append_instance(
+                        #prometheus_instance
+                    );
+                    result.push(#field_ident.render());
+                }
+            } else {
+                quote! {}
+            }
+        })
+        .fold(quote! {}, |acc, new| {
+            quote! {
+                #acc
+                #new
+            }
+        });
+
+    tokens.extend(quote! {
+        impl #imp Metric for #ident #ty #wher {
+            fn get_metrics_with_prefix(&self, prefix: &str) -> ::std::string::String {
+                let mut result: ::std::vec::Vec<::std::string::String> = Vec::new();
+
+                #field_list
+
+                result.concat()
+            }
+        }
+    });
     }
 }
 
@@ -129,6 +213,7 @@ struct PromFieldReciever {
     name: Option<String>,
     metric_type: Option<PrometheusMetricType>,
     help: Option<String>,
+    // extra_labels: Option<(String, String)>,
 }
 
 /// A metric type in prometheus.
